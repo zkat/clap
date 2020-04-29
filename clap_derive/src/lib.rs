@@ -29,7 +29,12 @@ mod derives;
 //     derives::derive_arg_enum(&input).into()
 // }
 
-/// Generates the `Clap` impl.
+/// Generates the `Clap` implementation.
+///
+/// This is far less verbose than defining the [`App`] struct manually,
+/// receiving an instance of [`ArgMatches`] from conducting parsing, and then
+/// implementing a conversion code (usually `impl From<ArgMatches> for
+/// MyStruct`) to instantiate an instance of the user context struct.
 #[proc_macro_derive(Clap, attributes(clap))]
 #[proc_macro_error]
 pub fn clap(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
