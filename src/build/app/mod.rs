@@ -29,7 +29,7 @@ use crate::{
     Result as ClapResult, INTERNAL_ERROR_MSG,
 };
 
-// FIXME (@CreepySkeleton): some of these variants are never constructed
+// @TODO FIXME (@CreepySkeleton): some of these variants (None) are never constructed
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[allow(unused)]
 pub(crate) enum Propagation {
@@ -39,10 +39,11 @@ pub(crate) enum Propagation {
     None,
 }
 
-/// Used to create a representation of a command line program and all possible command line
-/// arguments. Application settings are set using the "builder pattern" with the
-/// [`App::get_matches`] family of methods being the terminal methods that starts the
-/// runtime-parsing process. These methods then return information about the user supplied
+/// Represents a of a command line interface which is made up of all possible
+/// command line arguments and subcommands. Interface arguments and settings are
+/// configured using the "builder pattern." Once all configuration is complete,
+/// the [`App::get_matches`] family of methods start the runtime-parsing
+/// process. These methods then return information about the user supplied
 /// arguments (or lack there of).
 ///
 /// **NOTE:** There aren't any mandatory "options" that one must set. The "options" may
@@ -129,7 +130,7 @@ impl<'b> App<'b> {
             .flat_map(|aliases| aliases.iter().filter(|(_, vis)| *vis).map(|a| a.0))
     }
 
-    /// Iterate through the set of *all* the aliases for this subcommand, both visible and hidden.
+    /// Iterate through the set of *all* the aliases for this command, both visible and hidden.
     #[inline]
     pub fn get_all_aliases(&self) -> impl Iterator<Item = &str> {
         self.aliases
@@ -138,30 +139,31 @@ impl<'b> App<'b> {
             .flat_map(|aliases| aliases.iter().map(|a| a.0))
     }
 
-    /// Get the list of subcommands
+    /// Get a list of all subcommands for this command
     #[inline]
     pub fn get_subcommands(&self) -> &[App<'b>] {
         &self.subcommands
     }
 
-    /// Get the list of subcommands
+    /// Get a mutable list of all subcommands for this command
     #[inline]
     pub fn get_subcommands_mut(&mut self) -> &mut [App<'b>] {
         &mut self.subcommands
     }
 
-    /// Get the list of arguments
+    /// Get a list of all arguments for this command
     #[inline]
     pub fn get_arguments(&self) -> &[Arg<'b>] {
         &self.args.args
     }
 
-    /// Get the list of arguments the given argument conflicts with
+    /// Get a list of all arguments the given argument conflicts with
     ///
     /// ### Panics
     ///
-    /// Panics if the given arg conflicts with an argument that is unknown to this application
-    pub fn get_arg_conflicts_with<'a, 'x, 'y>(&'a self, arg: &'x Arg<'y>) -> Vec<&Arg<'b>> // FIXME: This could probably have been an iterator
+    /// If the given arg contains a conflict with an argument that is unknown to
+    /// this `App`
+    pub fn get_arg_conflicts_with<'a, 'x, 'y>(&'a self, arg: &'x Arg<'y>) -> Vec<&Arg<'b>> // @TODO @perf FIXME: This could probably have been an impl Iterator
     {
         if let Some(black_ids) = arg.blacklist.as_ref() {
             black_ids
@@ -178,13 +180,17 @@ impl<'b> App<'b> {
         }
     }
 
-    /// Check if the setting was set either with [`App::setting`] or [`App::global_setting`]
+    /// Returns `true` if the given [`AppSettings`] variant is currently set in
+    /// this `App` (Checks both [local] and [global settings])
+    ///
+    /// [local]: ./struct.App.html#method.setting
+    /// [global settings]: ./struct.App.html#method.global_setting
     #[inline]
     pub fn is_set(&self, s: AppSettings) -> bool {
         self.settings.is_set(s) || self.g_settings.is_set(s)
     }
 
-    /// Check whether this app has subcommands
+    /// Returns `true` if this `App` has subcommands
     #[inline]
     pub fn has_subcommands(&self) -> bool {
         !self.subcommands.is_empty()
@@ -192,19 +198,28 @@ impl<'b> App<'b> {
 }
 
 impl<'b> App<'b> {
-    /// Creates a new instance of an application requiring a name. The name may be, but doesn't
-    /// have to be, same as the binary. The name will be displayed to the user when they request to
-    /// print version or help and usage information.
+    /// Creates a new instance of an `App` requiring a `name`.
+    ///
+    /// It is common, but not required, to use binary name as the `name`. This
+    /// name will only be displayed to the user when they request to print
+    /// version or help and usage information.
+    ///
+    /// An `App` represents a command line interface (CLI) which is made up of
+    /// all possible command line arguments and subcommands. "Subcommands" are
+    /// sub-CLIs with their own arguments, settings, and even subcommands
+    /// forming a sort of heirarchy.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// # use clap::{App, Arg};
-    /// let prog = App::new("My Program")
+    /// # use clap::App;
+    /// App::new("My Program")
     /// # ;
     /// ```
-    pub fn new<S: Into<String>>(n: S) -> Self {
-        let name = n.into();
+    // @TODO FIXME (@kbknapp) if we're just converting to Id anyways,
+    // Into<String> probably isn't useful
+    pub fn new<S: Into<String>>(name: S) -> Self {
+        let name = name.into();
         App {
             id: Id::from(&*name),
             name,
@@ -214,88 +229,108 @@ impl<'b> App<'b> {
     }
 
     /// Sets a string of author(s) that will be displayed to the user when they
-    /// request the help information with `--help` or `-h`.
+    /// request the help message.
     ///
-    /// **Pro-tip:** Use `clap`s convenience macro [`crate_authors!`] to automatically set your
-    /// application's author(s) to the same thing as your crate at compile time.
+    /// **Pro-tip:** Use `clap`s convenience macro [`crate_authors!`] to
+    /// automatically set your application's author(s) to the same thing as your
+    /// crate at compile time.
     ///
-    /// See the [`examples/`]
-    /// directory for more information.
+    /// See the [`examples/`] directory for more information.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// # use clap::{App, Arg};
+    /// # use clap::App;
     /// App::new("myprog")
     ///      .author("Me, me@mymain.com")
     /// # ;
     /// ```
     /// [`crate_authors!`]: ./macro.crate_authors!.html
-    /// [`examples/`]: https://github.com/kbknapp/clap-rs/tree/master/examples
+    /// [`examples/`]: https://github.com/clap-rs/clap/tree/master/examples
     pub fn author<S: Into<&'b str>>(mut self, author: S) -> Self {
         self.author = Some(author.into());
         self
     }
 
-    /// Overrides the system-determined binary name. This should only be used when absolutely
-    /// necessary, such as when the binary name for your application is misleading, or perhaps
-    /// *not* how the user should invoke your program.
+    /// Overrides the runtime-determined name of the binary. This should only be
+    /// used when absolutely necessary, such as when the binary name for your
+    /// application is misleading, or perhaps *not* how the user should invoke
+    /// your program.
     ///
-    /// **Pro-tip:** When building things such as third party `cargo` subcommands, this setting
-    /// **should** be used!
+    /// Normally, the binary name is used in help and error messages. `clap`
+    /// automatically determines the binary name at runtime, however by manually
+    /// setting the binary name, one can effectively override what will be
+    /// displayed in the help or error messages.
     ///
-    /// **NOTE:** This command **should not** be used for [``]s.
+    /// **Pro-tip:** When building things such as third party `cargo`
+    /// subcommands, this setting **should** be used!
+    ///
+    /// **NOTE:** This *does not* change or set the name of the binary file on
+    /// disk. It only changes what clap thinks the name is for the purposes of
+    /// error or help messages.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// # use clap::{App, Arg};
+    /// # use clap::App;
     /// App::new("My Program")
     ///      .bin_name("my_binary")
     /// # ;
     /// ```
-    /// [``]: ./struct..html
     pub fn bin_name<S: Into<String>>(mut self, name: S) -> Self {
         self.bin_name = Some(name.into());
         self
     }
 
-    /// Sets a string describing what the program does. This will be displayed when displaying help
-    /// information with `-h`.
+    /// Sets a string describing what the program does. This will be displayed
+    /// when the user requests the short format help message (`-h`).
     ///
-    /// **NOTE:** If only `about` is provided, and not [`App::long_about`] but the user requests
-    /// `--help`, clap will still display the contents of `about` appropriately
+    /// ## Advanced
     ///
-    /// **NOTE:** Only [`App::about`] is used in completion script generation in order to be
-    /// concise
+    /// `clap` can display two different help messages, a [long format] and a
+    /// [short format] depending on whether the user used `-h` (short) or
+    /// `--help` (long). This method sets the message during the short format
+    /// (`-h`) message. However, if no long format message is configured, this
+    /// message will be displayed for *both* the long format, or short format
+    /// help message.
+    ///
+    /// **NOTE:** Only [`App::about`] (short format) is used in completion
+    /// script generation in order to be concise
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// # use clap::{App, Arg};
+    /// # use clap::App;
     /// App::new("myprog")
-    ///     .about("Does really amazing things to great people")
+    ///     .about("Does really amazing things for great people")
     /// # ;
     /// ```
-    /// [`App::long_about`]: ./struct.App.html#method.long_about
+    /// [`long format`]: ./struct.App.html#method.long_about
+    /// [`short format`]: ./struct.App.html#method.about
     pub fn about<S: Into<&'b str>>(mut self, about: S) -> Self {
         self.about = Some(about.into());
         self
     }
 
-    /// Sets a string describing what the program does. This will be displayed when displaying help
-    /// information.
+    /// Sets a long format string describing what the program does. This will be
+    /// displayed when the user requests the long format help message (`--help`).
     ///
-    /// **NOTE:** If only `long_about` is provided, and not [`App::about`] but the user requests
-    /// `-h` clap will still display the contents of `long_about` appropriately
+    /// ## Advanced
     ///
-    /// **NOTE:** Only [`App::about`] is used in completion script generation in order to be
-    /// concise
+    /// `clap` can display two different help messages, a [long format] and a
+    /// [short format] depending on whether the user used `-h` (short) or
+    /// `--help` (long). This method sets the message during the long format
+    /// (`--help`) message. However, if no short format message is configured,
+    /// this message will be displayed for *both* the long format, or short
+    /// format help message.
+    ///
+    /// **NOTE:** Only [`App::about`] (short format) is used in completion
+    /// script generation in order to be concise
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// # use clap::{App, Arg};
+    /// # use clap::App;
     /// App::new("myprog")
     ///     .long_about(
     /// "Does really amazing things to great people. Now let's talk a little
@@ -303,19 +338,22 @@ impl<'b> App<'b> {
     ///  a few lines of text, but that's ok!")
     /// # ;
     /// ```
-    /// [`App::about`]: ./struct.App.html#method.about
+    /// [`long format`]: ./struct.App.html#method.long_about
+    /// [`short format`]: ./struct.App.html#method.about
     pub fn long_about<S: Into<&'b str>>(mut self, about: S) -> Self {
         self.long_about = Some(about.into());
         self
     }
 
-    /// Sets the program's name. This will be displayed when displaying help information.
+    /// (Re)Sets the program's name. This will be displayed when displaying help
+    /// or version messages.
     ///
-    /// **Pro-tip:** This function is particularly useful when configuring a program via
-    /// [`App::from_yaml`] in conjunction with the [`crate_name!`] macro to derive the program's
-    /// name from its `Cargo.toml`.
+    /// **Pro-tip:** This function is particularly useful when configuring a
+    /// program via [`App::from_yaml`] in conjunction with the [`crate_name!`]
+    /// macro to derive the program's name from its `Cargo.toml`.
     ///
     /// # Examples
+    ///
     /// ```ignore
     /// # use clap::{App, load_yaml};
     /// let yml = load_yaml!("app.yml");
@@ -332,16 +370,16 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Adds additional help information to be displayed in addition to auto-generated help. This
-    /// information is displayed **after** the auto-generated help information. This is often used
-    /// to describe how to use the arguments, or caveats to be noted.
+    /// Adds additional help information to be displayed at the end of the
+    /// auto-generated help. This is often used to describe how to use the
+    /// arguments, caveats to be noted, or license and contact information.
     ///
     /// # Examples
     ///
     /// ```no_run
     /// # use clap::App;
     /// App::new("myprog")
-    ///     .after_help("Does really amazing things to great people...but be careful with -R")
+    ///     .after_help("Does really amazing things to great people...but be careful with -R!")
     /// # ;
     /// ```
     pub fn after_help<S: Into<&'b str>>(mut self, help: S) -> Self {
@@ -349,9 +387,9 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Adds additional help information to be displayed in addition to auto-generated help. This
-    /// information is displayed **before** the auto-generated help information. This is often used
-    /// for header information.
+    /// Adds additional help information to be displayed prior to the
+    /// auto-generated help. This is often used for header, copyright, or
+    /// license information.
     ///
     /// # Examples
     ///
@@ -366,46 +404,64 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Sets a string of the version number to be displayed when displaying version or help
-    /// information with `-V`.
+    /// Sets a string of the version number to be displayed when displaying the
+    /// short format version message (`-V`) or the help message
     ///
-    /// **NOTE:** If only `version` is provided, and not [`App::long_version`] but the user
-    /// requests `--version` clap will still display the contents of `version` appropriately
+    /// **Pro-tip:** Use `clap`s convenience macro [`crate_version!`] to
+    /// automatically set your application's version to the same thing as your
+    /// crate at compile time. See the [`examples/`] directory for more
+    /// information
     ///
-    /// **Pro-tip:** Use `clap`s convenience macro [`crate_version!`] to automatically set your
-    /// application's version to the same thing as your crate at compile time. See the [`examples/`]
-    /// directory for more information
+    /// ## Advanced
+    ///
+    /// `clap` can display two different version messages, a [long format] and a
+    /// [short format] depending on whether the user used `-V` (short) or
+    /// `--version` (long). This method sets the message during the short format
+    /// (`-V`). However, if no long format message is configured, this
+    /// message will be displayed for *both* the long format, or short format
+    /// version message.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// # use clap::{App, Arg};
+    /// # use clap::App;
     /// App::new("myprog")
     ///     .version("v0.1.24")
     /// # ;
     /// ```
     /// [`crate_version!`]: ./macro.crate_version!.html
-    /// [`examples/`]: https://github.com/kbknapp/clap-rs/tree/master/examples
+    /// [`examples/`]: https://github.com/clap-rs/clap/tree/master/examples
     /// [`App::long_version`]: ./struct.App.html#method.long_version
     pub fn version<S: Into<&'b str>>(mut self, ver: S) -> Self {
         self.version = Some(ver.into());
         self
     }
 
-    /// Sets a string of the version number to be displayed when displaying version or help
-    /// information with `--version`.
+    /// Sets a string of the version number to be displayed when the user
+    /// requets the long format version message (`--version`) or the help
+    /// message.
     ///
-    /// **NOTE:** If only `long_version` is provided, and not [`App::version`] but the user
-    /// requests `-V` clap will still display the contents of `long_version` appropriately
+    /// This is often used to display things such as commit ID, or compile time
+    /// configured options
     ///
-    /// **Pro-tip:** Use `clap`s convenience macro [`crate_version!`] to automatically set your
-    /// application's version to the same thing as your crate at compile time. See the [`examples/`]
-    /// directory for more information
+    /// **Pro-tip:** Use `clap`s convenience macro [`crate_version!`] to
+    /// automatically set your application's version to the same thing as your
+    /// crate at compile time. See the [`examples/`] directory for more
+    /// information
+    ///
+    /// ## Advanced
+    ///
+    /// `clap` can display two different version messages, a [long format] and a
+    /// [short format] depending on whether the user used `-V` (short) or
+    /// `--version` (long). This method sets the message during the long format
+    /// (`--version`). However, if no short format message is configured, this
+    /// message will be displayed for *both* the long format, or short format
+    /// version message.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// # use clap::{App, Arg};
+    /// # use clap::App;
     /// App::new("myprog")
     ///     .long_version(
     /// "v0.1.24
@@ -427,8 +483,9 @@ impl<'b> App<'b> {
     ///
     /// This will be displayed to the user when errors are found in argument parsing.
     ///
-    /// **CAUTION:** Using this setting disables `clap`s "context-aware" usage strings. After this
-    /// setting is set, this will be the only usage string displayed to the user!
+    /// **CAUTION:** Using this setting disables `clap`s "context-aware" usage
+    /// strings. After this setting is set, this will be the only usage string
+    /// displayed to the user!
     ///
     /// **NOTE:** This will not replace the entire help message, *only* the portion
     /// showing the usage.
@@ -452,11 +509,13 @@ impl<'b> App<'b> {
     ///
     /// This will be displayed to the user when they use `--help` or `-h`
     ///
-    /// **NOTE:** This replaces the **entire** help message, so nothing will be auto-generated.
+    /// **NOTE:** This replaces the **entire** help message, so nothing will be
+    /// auto-generated.
     ///
-    /// **NOTE:** This **only** replaces the help message for the current command, meaning if you
-    /// are using subcommands, those help messages will still be auto-generated unless you
-    /// specify a [`Arg::override_help`] for them as well.
+    /// **NOTE:** This **only** replaces the help message for the current
+    /// command, meaning if you are using subcommands, those help messages will
+    /// still be auto-generated unless you specify a [`Arg::override_help`] for
+    /// them as well.
     ///
     /// # Examples
     ///
@@ -488,6 +547,9 @@ impl<'b> App<'b> {
 
     /// Sets the help template to be used, overriding the default format.
     ///
+    /// **NOTE:** The template system is by design very simple. Therefore the
+    /// tags have to be written in the lowercase and without spacing.
+    ///
     /// Tags arg given inside curly brackets.
     ///
     /// Valid tags are:
@@ -512,14 +574,12 @@ impl<'b> App<'b> {
     /// # Examples
     ///
     /// ```no_run
-    /// # use clap::{App, Arg};
+    /// # use clap::App;
     /// App::new("myprog")
     ///     .version("1.0")
     ///     .help_template("{bin} ({version}) - {usage}")
     /// # ;
     /// ```
-    /// **NOTE:**The template system is, on purpose, very simple. Therefore the tags have to
-    /// be written in the lowercase and without spacing.
     /// [`App::about`]: ./struct.App.html#method.about
     /// [`App::after_help`]: ./struct.App.html#method.after_help
     /// [`App::before_help`]: ./struct.App.html#method.before_help
@@ -529,20 +589,19 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Enables a single command, or [``], level settings.
+    /// Enables a single settings for the current (this `App` instance) command or subcommand.
     ///
     /// See [`AppSettings`] for a full list of possibilities and examples.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// # use clap::{App, Arg, AppSettings};
+    /// # use clap::{App, AppSettings};
     /// App::new("myprog")
     ///     .setting(AppSettings::SubcommandRequired)
     ///     .setting(AppSettings::WaitOnError)
     /// # ;
     /// ```
-    /// [``]: ./struct..html
     /// [`AppSettings`]: ./enum.AppSettings.html
     #[inline]
     pub fn setting(mut self, setting: AppSettings) -> Self {
@@ -550,7 +609,7 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Disables a single command, or [``], level setting.
+    /// Disables a single setting for the current (this `App` instance) command or subcommand.
     ///
     /// See [`AppSettings`] for a full list of possibilities and examples.
     ///
@@ -562,7 +621,6 @@ impl<'b> App<'b> {
     ///     .unset_setting(AppSettings::ColorAuto)
     /// # ;
     /// ```
-    /// [``]: ./struct..html
     /// [`AppSettings`]: ./enum.AppSettings.html
     /// [global]: ./struct.App.html#method.global_setting
     #[inline]
@@ -572,7 +630,8 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Enables a single setting that is propagated down through all child subcommands.
+    /// Enables a single setting that is propagated **down** through all child
+    /// subcommands.
     ///
     /// See [`AppSettings`] for a full list of possibilities and examples.
     ///
@@ -581,7 +640,7 @@ impl<'b> App<'b> {
     /// # Examples
     ///
     /// ```no_run
-    /// # use clap::{App, Arg, AppSettings};
+    /// # use clap::{App, AppSettings};
     /// App::new("myprog")
     ///     .global_setting(AppSettings::SubcommandRequired)
     /// # ;
@@ -594,11 +653,13 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Disables a global setting, and stops propagating down to child subcommands.
+    /// Disables a global setting, and stops propagating down to child
+    /// subcommands.
     ///
     /// See [`AppSettings`] for a full list of possibilities and examples.
     ///
-    /// **NOTE:** The setting being unset will be unset from both local and [global] settings
+    /// **NOTE:** The setting being unset will be unset from both local and
+    /// [global] settings
     ///
     /// # Examples
     ///
@@ -617,12 +678,13 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Sets the terminal width at which to wrap help messages. Defaults to `120`. Using `0` will
-    /// ignore terminal widths and use source formatting.
+    /// Sets the terminal width at which to wrap help messages. Defaults to
+    /// `120`. Using `0` will ignore terminal widths and use source formatting.
     ///
-    /// `clap` automatically tries to determine the terminal width on Unix, Linux, OSX and Windows
-    /// if the `wrap_help` cargo "feature" has been used while compiling. If the terminal width
-    /// cannot be determined, `clap` defaults to `120`.
+    /// `clap` automatically tries to determine the terminal width on Unix,
+    /// Linux, OSX and Windows if the `wrap_help` cargo "feature" has been enabled
+    /// at compile time. If the terminal width cannot be determined, `clap`
+    /// fall back to `120`.
     ///
     /// **NOTE:** This setting applies globally and *not* on a per-command basis.
     ///
@@ -630,9 +692,9 @@ impl<'b> App<'b> {
     ///
     /// # Platform Specific
     ///
-    /// Only Unix, Linux, OSX and Windows support automatic determination of terminal width.
-    /// Even on those platforms, this setting is useful if for any reason the terminal width
-    /// cannot be determined.
+    /// Only Unix, Linux, OSX and Windows support automatic determination of
+    /// terminal width. Even on those platforms, this setting is useful if for
+    /// any reason the terminal width cannot be determined.
     ///
     /// # Examples
     ///
@@ -648,12 +710,13 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Sets the max terminal width at which to wrap help messages. Using `0` will ignore terminal
-    /// widths and use source formatting.
+    /// Sets the maximum terminal width at which to wrap help messages. Using `0`
+    /// will ignore terminal widths and use source formatting.
     ///
-    /// `clap` automatically tries to determine the terminal width on Unix, Linux, OSX and Windows
-    /// if the `wrap_help` cargo "feature" has been used while compiling, but one might want to
-    /// limit the size (e.g. when the terminal is running fullscreen).
+    /// `clap` automatically tries to determine the terminal width on Unix,
+    /// Linux, OSX and Windows if the `wrap_help` cargo "feature" has been
+    /// enabled at compile time, but one might want to limit the size to some
+    /// maximum (e.g. when the terminal is running fullscreen).
     ///
     /// **NOTE:** This setting applies globally and *not* on a per-command basis.
     ///
@@ -709,16 +772,21 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Set a custom section heading for future args. Every call to arg will
-    /// have this header (instead of its default header) until a subsequent
-    /// call to help_heading
+    /// Set a custom section heading for future args. Every call to [`App::arg`]
+    /// (and it's related methods) will use this header (instead of the default
+    /// header for the specified argument type) until a subsequent call to
+    /// [`App::`help_heading`] or [`App::stop_custom_headings`]
+    ///
+    /// This is useful if the default `FLAGS`, `OPTIONS`, or `ARGS` headings are
+    /// not specific enough for one's use case.
     #[inline]
     pub fn help_heading(mut self, heading: &'b str) -> Self {
         self.help_headings.push(Some(heading));
         self
     }
 
-    /// Stop using custom section headings.
+    /// Stop using [custom argument headings] and return to default headings.
+    /// [custom argument headings]: ./struct.App.html#method.help_heading
     #[inline]
     pub fn stop_custom_headings(mut self) -> Self {
         self.help_headings.push(None);
@@ -752,22 +820,31 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Allows adding a [``] alias, which function as "hidden" subcommands that
-    /// automatically dispatch as if this subcommand was used. This is more efficient, and easier
-    /// than creating multiple hidden subcommands as one only needs to check for the existence of
-    /// this command, and not all variants.
+    /// If this `App` instance is a subcommand, this method adds an alias, which
+    /// allows this subcommand to be accessed via *either* the original name, or
+    /// this given alias. This is more efficient, and easier than creating
+    /// multiple hidden subcommands as one only needs to check for the existence
+    /// of this command, and not all aliased variants.
+    ///
+    /// **NOTE:** Aliases defined with this method are *hidden* from the help
+    /// message. If looking for aliases that will be displayed in the help
+    /// message, see [`App::visible_alias`]
+    ///
+    /// **NOTE:** When using aliases, and checking for the existance of a
+    /// particular subcommand within an [`ArgMatches`] struct, one only needs to
+    /// search for the original name and not all aliases.
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```rust
     /// # use clap::{App, Arg, };
     /// let m = App::new("myprog")
-    ///             .subcommand(App::new("test")
-    ///                 .alias("do-stuff"))
-    ///             .get_matches_from(vec!["myprog", "do-stuff"]);
+    ///     .subcommand(App::new("test")
+    ///         .alias("do-stuff"))
+    ///     .get_matches_from(vec!["myprog", "do-stuff"]);
     /// assert_eq!(m.subcommand_name(), Some("test"));
     /// ```
-    /// [``]: ./struct..html
+    /// [`ArgMathes`]: ./struct.ArgMatches.html
     pub fn alias<S: Into<&'b str>>(mut self, name: S) -> Self {
         if let Some(ref mut als) = self.aliases {
             als.push((name.into(), false));
@@ -777,26 +854,34 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Allows adding [``] aliases, which function as "hidden" subcommands that
-    /// automatically dispatch as if this subcommand was used. This is more efficient, and easier
-    /// than creating multiple hidden subcommands as one only needs to check for the existence of
-    /// this command, and not all variants.
+    /// If this `App` instance is a subcommand, this method adds a multiple
+    /// aliases, which allows this subcommand to be accessed via *either* the
+    /// original name, or any of the given aliases. This is more efficient, and
+    /// easier than creating multiple hidden subcommands as one only needs to
+    /// check for the existence of this command, and not all aliased variants.
+    ///
+    /// **NOTE:** Aliases defined with this method are *hidden* from the help
+    /// message. If looking for aliases that will be displayed in the help
+    /// message, see [`App::visible_aliases`]
+    ///
+    /// **NOTE:** When using aliases, and checking for the existance of a
+    /// particular subcommand within an [`ArgMatches`] struct, one only needs to
+    /// search for the original name and not all aliases.
     ///
     /// # Examples
     ///
     /// ```rust
-    /// # use clap::{App, Arg, };
+    /// # use clap::{App, Arg};
     /// let m = App::new("myprog")
-    ///             .subcommand(App::new("test")
-    ///                 .aliases(&["do-stuff", "do-tests", "tests"]))
-    ///                 .arg(Arg::with_name("input")
-    ///                             .help("the file to add")
-    ///                             .index(1)
-    ///                             .required(false))
-    ///             .get_matches_from(vec!["myprog", "do-tests"]);
+    ///     .subcommand(App::new("test")
+    ///         .aliases(&["do-stuff", "do-tests", "tests"]))
+    ///         .arg(Arg::with_name("input")
+    ///             .help("the file to add")
+    ///             .index(1)
+    ///             .required(false))
+    ///     .get_matches_from(vec!["myprog", "do-tests"]);
     /// assert_eq!(m.subcommand_name(), Some("test"));
     /// ```
-    /// [``]: ./struct..html
     pub fn aliases(mut self, names: &[&'b str]) -> Self {
         if let Some(ref mut als) = self.aliases {
             for n in names {
@@ -808,20 +893,31 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Allows adding a [``] alias that functions exactly like those defined with
-    /// [`App::alias`], except that they are visible inside the help message.
+    /// If this `App` instance is a subcommand, this method adds a visible
+    /// alias, which allows this subcommand to be accessed via *either* the
+    /// original name, or the given alias. This is more efficient, and easier
+    /// than creating hidden subcommands as one only needs to check for
+    /// the existence of this command, and not all aliased variants.
+    ///
+    /// **NOTE:** The alias defined with this method is *visible* from the help
+    /// message and displayed as if it were just another regular subcommand. If
+    /// looking for an alias that will not be displayed in the help message, see
+    /// [`App::alias`]
+    ///
+    /// **NOTE:** When using aliases, and checking for the existance of a
+    /// particular subcommand within an [`ArgMatches`] struct, one only needs to
+    /// search for the original name and not all aliases.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// # use clap::{App, Arg, };
+    /// # use clap::{App, Arg};
     /// let m = App::new("myprog")
-    ///             .subcommand(App::new("test")
-    ///                 .visible_alias("do-stuff"))
-    ///             .get_matches_from(vec!["myprog", "do-stuff"]);
+    ///     .subcommand(App::new("test")
+    ///         .visible_alias("do-stuff"))
+    ///     .get_matches_from(vec!["myprog", "do-stuff"]);
     /// assert_eq!(m.subcommand_name(), Some("test"));
     /// ```
-    /// [``]: ./struct..html
     /// [`App::alias`]: ./struct.App.html#method.alias
     pub fn visible_alias<S: Into<&'b str>>(mut self, name: S) -> Self {
         if let Some(ref mut als) = self.aliases {
@@ -832,20 +928,31 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Allows adding multiple [``] aliases that functions exactly like those defined
-    /// with [`App::aliases`], except that they are visible inside the help message.
+    /// If this `App` instance is a subcommand, this method adds multiple visible
+    /// aliases, which allows this subcommand to be accessed via *either* the
+    /// original name, or any of the given aliases. This is more efficient, and easier
+    /// than creating multiple hidden subcommands as one only needs to check for
+    /// the existence of this command, and not all aliased variants.
+    ///
+    /// **NOTE:** The alias defined with this method is *visible* from the help
+    /// message and displayed as if it were just another regular subcommand. If
+    /// looking for an alias that will not be displayed in the help message, see
+    /// [`App::alias`]
+    ///
+    /// **NOTE:** When using aliases, and checking for the existance of a
+    /// particular subcommand within an [`ArgMatches`] struct, one only needs to
+    /// search for the original name and not all aliases.
     ///
     /// # Examples
     ///
     /// ```no_run
     /// # use clap::{App, Arg, };
     /// let m = App::new("myprog")
-    ///             .subcommand(App::new("test")
-    ///                 .visible_aliases(&["do-stuff", "tests"]))
-    ///             .get_matches_from(vec!["myprog", "do-stuff"]);
+    ///     .subcommand(App::new("test")
+    ///         .visible_aliases(&["do-stuff", "tests"]))
+    ///     .get_matches_from(vec!["myprog", "do-stuff"]);
     /// assert_eq!(m.subcommand_name(), Some("test"));
     /// ```
-    /// [``]: ./struct..html
     /// [`App::aliases`]: ./struct.App.html#method.aliases
     pub fn visible_aliases(mut self, names: &[&'b str]) -> Self {
         if let Some(ref mut als) = self.aliases {
@@ -858,22 +965,106 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Replaces an argument to this application with other arguments.
+    /// Replaces an argument or subcommand used on the CLI at runtime with other arguments are subcommands.
     ///
-    /// Below, when the given args are `app install`, they will be changed to `app module install`.
+    /// When this method is used, `name` is removed from the CLI, and `target`
+    /// is inserted in it's place. Parsing continues as if the user typed
+    /// `target` instead of `name`.
+    ///
+    /// This can be used to create "shortcuts" for subcommands, or if a
+    /// particular argument has the semantic meaning of several other specific
+    /// arguments and values.
+    ///
+    /// Some examples may help to clear this up.
     ///
     /// # Examples
     ///
+    /// We'll start with the "subcommand short" example. In this example, let's
+    /// assume we have a program with a subcommand `module` which can be invoked
+    /// via `app module`. Now let's also assume `module` also has a subcommand
+    /// called `install` which can be invoked `app module install`. If for some
+    /// reason, users needed to be able to reach `app module install` via the
+    /// short-hand `app install` we have several options.
+    ///
+    /// We *could* create another sibling subcommand to `module` called
+    /// `install`, but then we need to manage another subcommand, and manually
+    /// dispatch to `app module install` handling code. This is error prone, and
+    /// tedious.
+    ///
+    /// We could instead use `App::replace` so that when the user types `app
+    /// install`, `clap` will replace `install` with `module install` which will
+    /// end up getting parsed as if the user typed the entire incantation.
+    ///
     /// ```rust
-    /// # use clap::{App, Arg, };
+    /// # use clap::App;
     /// let m = App::new("app")
-    ///     .replace("install", &["module", "install"])
     ///     .subcommand(App::new("module")
     ///         .subcommand(App::new("install")))
+    ///     .replace("install", &["module", "install"])
     ///     .get_matches_from(vec!["app", "install"]);
     ///
     /// assert!(m.subcommand_matches("module").is_some());
     /// assert!(m.subcommand_matches("module").unwrap().subcommand_matches("install").is_some());
+    /// ```
+    ///
+    /// Now let's show an argument exmaple!
+    ///
+    /// Let's assume we have an application with two flags `--save-context` and
+    /// `--save-startup`. But often users end up needing to do *both* at the
+    /// same time. We can add a third flag `--save-all` which semantically means
+    /// the same thing as `app --save-context --save-runtime`. In order to
+    /// implement this we again have several options.
+    ///
+    /// We could create this third argument, and manually check if that argument
+    /// and in our own consumer code handle the fact that both `--save-context`
+    /// and `--save-runtime` *should* have been used. But again this is error
+    /// prone and tedious. If we had code relying on checking `--save-context`
+    /// and we forgot to update that code to *also* check `--save-all` it'd mean
+    /// an error!
+    ///
+    /// Luckily we can use `App::replace` so that when the user types
+    /// `--save-all`, `clap` will replace that argument with `--save-context
+    /// --save-runtime`, and parsing will continue like normal. Now all our code
+    /// that was originally checking for things like `--save-context` doesn't
+    /// need to change!
+    ///
+    /// ```rust
+    /// # use clap::{App, Arg};
+    /// let m = App::new("app")
+    ///     .arg(Arg::with_name("save-context")
+    ///         .long("save-context"))
+    ///     .arg(Arg::with_name("save-runtime")
+    ///         .long("save-context"))
+    ///     .replace("--save-all", &["--save-context", "--save-all"])
+    ///     .get_matches_from(vec!["app", "--save-all"]);
+    ///
+    /// assert!(m.is_present("save-context"));
+    /// assert!(m.is_present("save-runtime"));
+    /// ```
+    ///
+    /// This can also be used with options, for example if our application with
+    /// `--save-*` above also had a `--format=TYPE` option. Let's say it
+    /// accepted `txt` or `json` values. However, when `--save-all` is used,
+    /// only `--format=json` is allowed, or valid. We could change the example
+    /// above to enforce this:
+    ///
+    /// ```rust
+    /// # use clap::{App, Arg};
+    /// let m = App::new("app")
+    ///     .arg(Arg::with_name("save-context")
+    ///         .long("save-context"))
+    ///     .arg(Arg::with_name("save-runtime")
+    ///         .long("save-context"))
+    ///     .arg(Arg::with_name("format")
+    ///         .long("format")
+    ///         .takes_value(true)
+    ///         .possible_values(&["txt", "json"]))
+    ///     .replace("--save-all", &["--save-context", "--save-all", "--format=json"])
+    ///     .get_matches_from(vec!["app", "--save-all"]);
+    ///
+    /// assert!(m.is_present("save-context"));
+    /// assert!(m.is_present("save-runtime"));
+    /// assert_eq!(m.value_of("format"), Some("json"));
     /// ```
     #[inline]
     pub fn replace(mut self, name: &'b str, target: &'b [&'b str]) -> Self {
