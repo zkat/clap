@@ -1,5 +1,3 @@
-use std::io::{stderr, stdout, Result, Write};
-
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub(crate) enum ColorChoice {
     Auto,

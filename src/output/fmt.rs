@@ -21,12 +21,6 @@ fn is_a_tty(stderr: bool) -> bool {
     atty::is(stream)
 }
 
-#[cfg(not(feature = "color"))]
-fn is_a_tty(_: bool) -> bool {
-    debug!("is_a_tty");
-    false
-}
-
 #[derive(Debug)]
 pub(crate) struct Colorizer {
     use_stderr: bool,
@@ -115,10 +109,12 @@ impl Colorizer {
             // [e]println can't be used here because it panics
             // if something went wrong. We don't want that.
             if self.use_stderr {
-                let stderr = std::io::stderr().lock();
+                let stderr = std::io::stderr();
+                let mut stderr = stderr.lock();
                 write!(stderr, "{}", self)
             } else {
-                let stdout = std::io::stdout().lock();
+                let stdout = std::io::stdout();
+                let mut stdout = stdout.lock();
                 write!(stdout, "{}", self)
             }
         }

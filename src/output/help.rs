@@ -938,8 +938,6 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
         }
 
         for part in parts {
-            self.none(part)?;
-
             tags! {
                 match part {
                     "bin" => {
