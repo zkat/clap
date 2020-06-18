@@ -346,13 +346,13 @@ impl ArgMatches {
     {
         if let Some(v) = self.value_of(name) {
             v.parse::<R>().or_else(|e| {
-                Err(Error::value_validation_auto(&format!(
+                Err(Error::value_validation_auto(format!(
                     "The argument '{}' isn't a valid value: {}",
                     v, e
-                ))?)
+                )))
             })
         } else {
-            Err(Error::argument_not_found_auto(name)?)
+            Err(Error::argument_not_found_auto(name))
         }
     }
 
@@ -432,15 +432,15 @@ impl ArgMatches {
         if let Some(vals) = self.values_of(name) {
             vals.map(|v| {
                 v.parse::<R>().or_else(|e| {
-                    Err(Error::value_validation_auto(&format!(
+                    Err(Error::value_validation_auto(format!(
                         "The argument '{}' isn't a valid value: {}",
                         v, e
-                    ))?)
+                    )))
                 })
             })
             .collect()
         } else {
-            Err(Error::argument_not_found_auto(name)?)
+            Err(Error::argument_not_found_auto(name))
         }
     }
 
