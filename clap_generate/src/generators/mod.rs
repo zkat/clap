@@ -77,7 +77,10 @@ pub trait Generator {
     /// **NOTE:** `path` should not contain the root `bin_name`.
     ///
     /// [clap]: ../clap/struct.App.html
-    fn find_subcommand_with_path<'b>(p: &'b App<'b>, path: Vec<&str>) -> &'b App<'b> {
+    fn find_subcommand_with_path<'app, 'help>(
+        p: &'app App<'help>,
+        path: Vec<&str>,
+    ) -> &'app App<'help> {
         let mut app = p;
 
         for sc in path {
@@ -118,7 +121,7 @@ pub trait Generator {
 
     /// Gets all the short options and flags of a [`clap::App`](../clap/struct.App.html).
     /// Includes `h` and `V` depending on the [`clap::AppSettings`](../clap/enum.AppSettings.html).
-    fn shorts<'b>(p: &'b App<'b>) -> Vec<char> {
+    fn shorts<'app, 'help>(p: &'app App<'help>) -> Vec<char> {
         debug!("shorts: name={}", p.get_name());
 
         let mut shorts: Vec<char> = p
@@ -146,7 +149,7 @@ pub trait Generator {
 
     /// Gets all the long options and flags of a [`clap::App`](../clap/struct.App.html).
     /// Includes `help` and `version` depending on the [`clap::AppSettings`](../clap/enum.AppSettings.html).
-    fn longs<'b>(p: &'b App<'b>) -> Vec<String> {
+    fn longs<'app, 'help>(p: &'app App<'help>) -> Vec<String> {
         debug!("longs: name={}", p.get_name());
 
         let mut longs: Vec<String> = p
@@ -176,7 +179,7 @@ pub trait Generator {
 
     /// Gets all the flags of a [`clap::App`](../clap/struct.App.html).
     /// Includes `help` and `version` depending on the [`clap::AppSettings`](../clap/enum.AppSettings.html).
-    fn flags<'b>(p: &'b App<'b>) -> Vec<Arg> {
+    fn flags<'help>(p: &'_ App<'help>) -> Vec<Arg<'help>> {
         debug!("flags: name={}", p.get_name());
 
         let mut flags: Vec<_> = flags!(p).cloned().collect();

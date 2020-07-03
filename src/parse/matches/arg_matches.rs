@@ -78,7 +78,7 @@ pub struct ArgMatches {
     pub(crate) subcommand: Option<Box<SubCommand>>,
 }
 
-impl<'a> Default for ArgMatches {
+impl Default for ArgMatches {
     fn default() -> Self {
         ArgMatches {
             args: IndexMap::new(),
@@ -214,7 +214,7 @@ impl ArgMatches {
     /// ```
     /// [`Values`]: ./struct.Values.html
     /// [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
-    pub fn values_of<T: Key>(&self, id: T) -> Option<Values<'_>> {
+    pub fn values_of<T: Key>(&self, id: T) -> Option<Values> {
         self.args.get(&Id::from(id)).map(|arg| {
             fn to_str_slice(o: &OsString) -> &str {
                 o.to_str().expect(INVALID_UTF8)

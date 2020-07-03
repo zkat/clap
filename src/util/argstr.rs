@@ -54,7 +54,7 @@ impl<'a> ArgStr<'a> {
         (self.to_borrowed(), Self(Cow::Borrowed(&[])))
     }
 
-    pub(crate) fn trim_start_matches(&'a self, byte: u8) -> ArgStr<'_> {
+    pub(crate) fn trim_start_matches(&'a self, byte: u8) -> ArgStr<'a> {
         assert!(byte.is_ascii());
 
         let mut found = false;
@@ -89,7 +89,7 @@ impl<'a> ArgStr<'a> {
         self.split_at_unchecked(i).1
     }
 
-    pub(crate) fn split_at_unchecked(&'a self, i: usize) -> (ArgStr<'_>, ArgStr<'_>) {
+    pub(crate) fn split_at_unchecked(&'a self, i: usize) -> (ArgStr<'a>, ArgStr<'a>) {
         (
             Self(Cow::Borrowed(&self.0[..i])),
             Self(Cow::Borrowed(&self.0[i..])),
@@ -132,32 +132,32 @@ impl<'a> ArgStr<'a> {
     }
 }
 
-impl<'a> Debug for ArgStr<'a> {
+impl Debug for ArgStr<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self.to_string_lossy())
     }
 }
 
-impl<'a> PartialEq<str> for ArgStr<'a> {
+impl PartialEq<str> for ArgStr<'_> {
     fn eq(&self, other: &str) -> bool {
         self.0 == other.as_bytes()
     }
 }
 
-impl<'a> PartialEq<&str> for ArgStr<'a> {
+impl PartialEq<&str> for ArgStr<'_> {
     fn eq(&self, other: &&str) -> bool {
         self.eq(*other)
     }
 }
 
-impl<'a> PartialEq<ArgStr<'a>> for str {
-    fn eq(&self, other: &ArgStr<'a>) -> bool {
+impl PartialEq<ArgStr<'_>> for str {
+    fn eq(&self, other: &ArgStr) -> bool {
         other.eq(self)
     }
 }
 
-impl<'a> PartialEq<ArgStr<'a>> for &str {
-    fn eq(&self, other: &ArgStr<'a>) -> bool {
+impl PartialEq<ArgStr<'_>> for &str {
+    fn eq(&self, other: &ArgStr) -> bool {
         other.eq(self)
     }
 }

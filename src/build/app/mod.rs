@@ -69,35 +69,35 @@ pub(crate) enum Propagation {
 /// ```
 /// [`App::get_matches`]: ./struct.App.html#method.get_matches
 #[derive(Default, Debug, Clone)]
-pub struct App<'b> {
+pub struct App<'help> {
     pub(crate) id: Id,
     pub(crate) name: String,
     pub(crate) bin_name: Option<String>,
-    pub(crate) author: Option<&'b str>,
-    pub(crate) version: Option<&'b str>,
-    pub(crate) long_version: Option<&'b str>,
-    pub(crate) about: Option<&'b str>,
-    pub(crate) long_about: Option<&'b str>,
-    pub(crate) before_help: Option<&'b str>,
-    pub(crate) after_help: Option<&'b str>,
-    pub(crate) aliases: Vec<(&'b str, bool)>, // (name, visible)
-    pub(crate) usage_str: Option<&'b str>,
+    pub(crate) author: Option<&'help str>,
+    pub(crate) version: Option<&'help str>,
+    pub(crate) long_version: Option<&'help str>,
+    pub(crate) about: Option<&'help str>,
+    pub(crate) long_about: Option<&'help str>,
+    pub(crate) before_help: Option<&'help str>,
+    pub(crate) after_help: Option<&'help str>,
+    pub(crate) aliases: Vec<(&'help str, bool)>, // (name, visible)
+    pub(crate) usage_str: Option<&'help str>,
     pub(crate) usage: Option<String>,
-    pub(crate) help_str: Option<&'b str>,
+    pub(crate) help_str: Option<&'help str>,
     pub(crate) disp_ord: usize,
     pub(crate) term_w: Option<usize>,
     pub(crate) max_w: Option<usize>,
-    pub(crate) template: Option<&'b str>,
+    pub(crate) template: Option<&'help str>,
     pub(crate) settings: AppFlags,
     pub(crate) g_settings: AppFlags,
-    pub(crate) args: MKeyMap<'b>,
-    pub(crate) subcommands: Vec<App<'b>>,
-    pub(crate) replacers: HashMap<&'b str, &'b [&'b str]>,
-    pub(crate) groups: Vec<ArgGroup<'b>>,
-    pub(crate) current_help_heading: Option<&'b str>,
+    pub(crate) args: MKeyMap<'help>,
+    pub(crate) subcommands: Vec<App<'help>>,
+    pub(crate) replacers: HashMap<&'help str, &'help [&'help str]>,
+    pub(crate) groups: Vec<ArgGroup<'help>>,
+    pub(crate) current_help_heading: Option<&'help str>,
 }
 
-impl<'b> App<'b> {
+impl<'help> App<'help> {
     /// Get the name of the app
     #[inline]
     pub fn get_name(&self) -> &str {
@@ -135,19 +135,19 @@ impl<'b> App<'b> {
 
     /// Get the list of subcommands
     #[inline]
-    pub fn get_subcommands(&self) -> &[App<'b>] {
+    pub fn get_subcommands(&self) -> &[App<'help>] {
         &self.subcommands
     }
 
     /// Get the list of subcommands
     #[inline]
-    pub fn get_subcommands_mut(&mut self) -> &mut [App<'b>] {
+    pub fn get_subcommands_mut(&mut self) -> &mut [App<'help>] {
         &mut self.subcommands
     }
 
     /// Get the list of arguments
     #[inline]
-    pub fn get_arguments(&self) -> &[Arg<'b>] {
+    pub fn get_arguments(&self) -> &[Arg<'help>] {
         &self.args.args
     }
 
@@ -156,7 +156,7 @@ impl<'b> App<'b> {
     /// ### Panics
     ///
     /// Panics if the given arg conflicts with an argument that is unknown to this application
-    pub fn get_arg_conflicts_with<'a, 'x, 'y>(&'a self, arg: &'x Arg<'y>) -> Vec<&Arg<'b>> // FIXME: This could probably have been an iterator
+    pub fn get_arg_conflicts_with(&self, arg: &Arg) -> Vec<&Arg<'help>> // FIXME: This could probably have been an iterator
     {
         arg.blacklist
             .iter()
@@ -182,7 +182,7 @@ impl<'b> App<'b> {
     }
 }
 
-impl<'b> App<'b> {
+impl<'help> App<'help> {
     /// Creates a new instance of an application requiring a name. The name may be, but doesn't
     /// have to be, same as the binary. The name will be displayed to the user when they request to
     /// print version or help and usage information.
@@ -223,7 +223,7 @@ impl<'b> App<'b> {
     /// ```
     /// [`crate_authors!`]: ./macro.crate_authors!.html
     /// [`examples/`]: https://github.com/kbknapp/clap-rs/tree/master/examples
-    pub fn author<S: Into<&'b str>>(mut self, author: S) -> Self {
+    pub fn author<S: Into<&'help str>>(mut self, author: S) -> Self {
         self.author = Some(author.into());
         self
     }
@@ -269,7 +269,7 @@ impl<'b> App<'b> {
     /// # ;
     /// ```
     /// [`App::long_about`]: ./struct.App.html#method.long_about
-    pub fn about<S: Into<&'b str>>(mut self, about: S) -> Self {
+    pub fn about<S: Into<&'help str>>(mut self, about: S) -> Self {
         self.about = Some(about.into());
         self
     }
@@ -295,7 +295,7 @@ impl<'b> App<'b> {
     /// # ;
     /// ```
     /// [`App::about`]: ./struct.App.html#method.about
-    pub fn long_about<S: Into<&'b str>>(mut self, about: S) -> Self {
+    pub fn long_about<S: Into<&'help str>>(mut self, about: S) -> Self {
         self.long_about = Some(about.into());
         self
     }
@@ -335,7 +335,7 @@ impl<'b> App<'b> {
     ///     .after_help("Does really amazing things to great people...but be careful with -R")
     /// # ;
     /// ```
-    pub fn after_help<S: Into<&'b str>>(mut self, help: S) -> Self {
+    pub fn after_help<S: Into<&'help str>>(mut self, help: S) -> Self {
         self.after_help = Some(help.into());
         self
     }
@@ -352,7 +352,7 @@ impl<'b> App<'b> {
     ///     .before_help("Some info I'd like to appear before the help info")
     /// # ;
     /// ```
-    pub fn before_help<S: Into<&'b str>>(mut self, help: S) -> Self {
+    pub fn before_help<S: Into<&'help str>>(mut self, help: S) -> Self {
         self.before_help = Some(help.into());
         self
     }
@@ -378,7 +378,7 @@ impl<'b> App<'b> {
     /// [`crate_version!`]: ./macro.crate_version!.html
     /// [`examples/`]: https://github.com/kbknapp/clap-rs/tree/master/examples
     /// [`App::long_version`]: ./struct.App.html#method.long_version
-    pub fn version<S: Into<&'b str>>(mut self, ver: S) -> Self {
+    pub fn version<S: Into<&'help str>>(mut self, ver: S) -> Self {
         self.version = Some(ver.into());
         self
     }
@@ -409,7 +409,7 @@ impl<'b> App<'b> {
     /// [`crate_version!`]: ./macro.crate_version!.html
     /// [`examples/`]: https://github.com/kbknapp/clap-rs/tree/master/examples
     /// [`App::version`]: ./struct.App.html#method.version
-    pub fn long_version<S: Into<&'b str>>(mut self, ver: S) -> Self {
+    pub fn long_version<S: Into<&'help str>>(mut self, ver: S) -> Self {
         self.long_version = Some(ver.into());
         self
     }
@@ -433,7 +433,7 @@ impl<'b> App<'b> {
     /// # ;
     /// ```
     /// [`ArgMatches::usage`]: ./struct.ArgMatches.html#method.usage
-    pub fn override_usage<S: Into<&'b str>>(mut self, usage: S) -> Self {
+    pub fn override_usage<S: Into<&'help str>>(mut self, usage: S) -> Self {
         self.usage_str = Some(usage.into());
         self
     }
@@ -472,7 +472,7 @@ impl<'b> App<'b> {
     /// # ;
     /// ```
     /// [`Arg::override_help`]: ./struct.Arg.html#method.override_help
-    pub fn override_help<S: Into<&'b str>>(mut self, help: S) -> Self {
+    pub fn override_help<S: Into<&'help str>>(mut self, help: S) -> Self {
         self.help_str = Some(help.into());
         self
     }
@@ -515,7 +515,7 @@ impl<'b> App<'b> {
     /// [`App::after_help`]: ./struct.App.html#method.after_help
     /// [`App::before_help`]: ./struct.App.html#method.before_help
     /// [`AppSettings::UnifiedHelpMessage`]: ./enum.AppSettings.html#variant.UnifiedHelpMessage
-    pub fn help_template<S: Into<&'b str>>(mut self, s: S) -> Self {
+    pub fn help_template<S: Into<&'help str>>(mut self, s: S) -> Self {
         self.template = Some(s.into());
         self
     }
@@ -689,7 +689,7 @@ impl<'b> App<'b> {
     /// # ;
     /// ```
     /// [argument]: ./struct.Arg.html
-    pub fn arg<A: Into<Arg<'b>>>(mut self, a: A) -> Self {
+    pub fn arg<A: Into<Arg<'help>>>(mut self, a: A) -> Self {
         let mut arg = a.into();
         if let Some(help_heading) = self.current_help_heading {
             arg = arg.help_heading(Some(help_heading));
@@ -702,7 +702,7 @@ impl<'b> App<'b> {
     /// have this header (instead of its default header) until a subsequent
     /// call to help_heading
     #[inline]
-    pub fn help_heading(mut self, heading: &'b str) -> Self {
+    pub fn help_heading(mut self, heading: &'help str) -> Self {
         self.current_help_heading = Some(heading);
         self
     }
@@ -731,7 +731,7 @@ impl<'b> App<'b> {
     pub fn args<I, T>(mut self, args: I) -> Self
     where
         I: IntoIterator<Item = T>,
-        T: Into<Arg<'b>>,
+        T: Into<Arg<'help>>,
     {
         // @TODO @perf @p4 @v3-beta: maybe extend_from_slice would be possible and perform better?
         // But that may also not let us do `&["-a 'some'", "-b 'other']` because of not Into<Arg>
@@ -757,7 +757,7 @@ impl<'b> App<'b> {
     /// assert_eq!(m.subcommand_name(), Some("test"));
     /// ```
     /// [``]: ./struct..html
-    pub fn alias<S: Into<&'b str>>(mut self, name: S) -> Self {
+    pub fn alias<S: Into<&'help str>>(mut self, name: S) -> Self {
         self.aliases.push((name.into(), false));
         self
     }
@@ -782,7 +782,7 @@ impl<'b> App<'b> {
     /// assert_eq!(m.subcommand_name(), Some("test"));
     /// ```
     /// [``]: ./struct..html
-    pub fn aliases(mut self, names: &[&'b str]) -> Self {
+    pub fn aliases(mut self, names: &[&'help str]) -> Self {
         self.aliases.extend(names.iter().map(|n| (*n, false)));
         self
     }
@@ -802,7 +802,7 @@ impl<'b> App<'b> {
     /// ```
     /// [``]: ./struct..html
     /// [`App::alias`]: ./struct.App.html#method.alias
-    pub fn visible_alias<S: Into<&'b str>>(mut self, name: S) -> Self {
+    pub fn visible_alias<S: Into<&'help str>>(mut self, name: S) -> Self {
         self.aliases.push((name.into(), true));
         self
     }
@@ -822,7 +822,7 @@ impl<'b> App<'b> {
     /// ```
     /// [``]: ./struct..html
     /// [`App::aliases`]: ./struct.App.html#method.aliases
-    pub fn visible_aliases(mut self, names: &[&'b str]) -> Self {
+    pub fn visible_aliases(mut self, names: &[&'help str]) -> Self {
         self.aliases.extend(names.iter().map(|n| (*n, true)));
         self
     }
@@ -845,7 +845,7 @@ impl<'b> App<'b> {
     /// assert!(m.subcommand_matches("module").unwrap().subcommand_matches("install").is_some());
     /// ```
     #[inline]
-    pub fn replace(mut self, name: &'b str, target: &'b [&'b str]) -> Self {
+    pub fn replace(mut self, name: &'help str, target: &'help [&'help str]) -> Self {
         self.replacers.insert(name, target);
         self
     }
@@ -884,7 +884,7 @@ impl<'b> App<'b> {
     /// ```
     /// [`ArgGroup`]: ./struct.ArgGroup.html
     #[inline]
-    pub fn group(mut self, group: ArgGroup<'b>) -> Self {
+    pub fn group(mut self, group: ArgGroup<'help>) -> Self {
         self.groups.push(group);
         self
     }
@@ -913,7 +913,7 @@ impl<'b> App<'b> {
     /// ```
     /// [`ArgGroup`]: ./struct.ArgGroup.html
     /// [`App`]: ./struct.App.html
-    pub fn groups(mut self, groups: &[ArgGroup<'b>]) -> Self {
+    pub fn groups(mut self, groups: &[ArgGroup<'help>]) -> Self {
         for g in groups {
             self = self.group(g.into());
         }
@@ -938,7 +938,7 @@ impl<'b> App<'b> {
     /// [``]: ./struct..html
     /// [`App`]: ./struct.App.html
     #[inline]
-    pub fn subcommand(mut self, subcmd: App<'b>) -> Self {
+    pub fn subcommand(mut self, subcmd: App<'help>) -> Self {
         self.subcommands.push(subcmd);
         self
     }
@@ -961,7 +961,7 @@ impl<'b> App<'b> {
     /// [`IntoIterator`]: https://doc.rust-lang.org/std/iter/trait.IntoIterator.html
     pub fn subcommands<I>(mut self, subcmds: I) -> Self
     where
-        I: IntoIterator<Item = App<'b>>,
+        I: IntoIterator<Item = App<'help>>,
     {
         for subcmd in subcmds {
             self.subcommands.push(subcmd);
@@ -1047,8 +1047,8 @@ impl<'b> App<'b> {
     /// [`Arg`]: ./struct.Arg.html
     pub fn mut_arg<T, F>(mut self, arg_id: T, f: F) -> Self
     where
-        F: FnOnce(Arg<'b>) -> Arg<'b>,
-        T: Key + Into<&'b str>,
+        F: FnOnce(Arg<'help>) -> Arg<'help>,
+        T: Key + Into<&'help str>,
     {
         let arg_id: &str = arg_id.into();
         let id = Id::from(arg_id);
@@ -1449,7 +1449,7 @@ impl<'b> App<'b> {
 }
 
 // Internally used only
-impl<'b> App<'b> {
+impl<'help> App<'help> {
     fn _do_parse(&mut self, it: &mut Input) -> ClapResult<ArgMatches> {
         debug!("App::_do_parse");
         let mut matcher = ArgMatcher::default();
@@ -1550,7 +1550,7 @@ impl<'b> App<'b> {
     }
 
     #[cfg(debug_assertions)]
-    fn two_args_of<'a, F>(&'a self, condition: F) -> Option<(&'a Arg<'b>, &'a Arg<'b>)>
+    fn two_args_of<F>(&self, condition: F) -> Option<(&Arg<'help>, &Arg<'help>)>
     where
         F: Fn(&Arg<'_>) -> bool,
     {
@@ -1913,8 +1913,8 @@ impl<'b> App<'b> {
 }
 
 // Internal Query Methods
-impl<'b> App<'b> {
-    pub(crate) fn find(&self, arg_id: &Id) -> Option<&Arg<'b>> {
+impl<'help> App<'help> {
+    pub(crate) fn find(&self, arg_id: &Id) -> Option<&Arg<'help>> {
         self.args.args.iter().find(|a| a.id == *arg_id)
     }
 
@@ -2048,8 +2048,8 @@ impl<'b> App<'b> {
     }
 }
 
-impl<'b> Index<&'_ Id> for App<'b> {
-    type Output = Arg<'b>;
+impl<'help> Index<&'_ Id> for App<'help> {
+    type Output = Arg<'help>;
 
     fn index(&self, key: &'_ Id) -> &Self::Output {
         self.find(key).expect(INTERNAL_ERROR_MSG)
@@ -2057,9 +2057,9 @@ impl<'b> Index<&'_ Id> for App<'b> {
 }
 
 #[cfg(feature = "yaml")]
-impl<'a> From<&'a Yaml> for App<'a> {
+impl<'help> From<&'help Yaml> for App<'help> {
     #[allow(clippy::cognitive_complexity)]
-    fn from(mut yaml: &'a Yaml) -> Self {
+    fn from(mut yaml: &'help Yaml) -> Self {
         // We WANT this to panic on error...so expect() is good.
         let mut is_sc = None;
         let mut a = if let Some(name) = yaml["name"].as_str() {
@@ -2196,7 +2196,7 @@ impl<'a> From<&'a Yaml> for App<'a> {
     }
 }
 
-impl<'e> fmt::Display for App<'e> {
+impl fmt::Display for App<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.name)
     }
