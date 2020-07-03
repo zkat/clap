@@ -1550,11 +1550,11 @@ impl<'b> App<'b> {
     }
 
     #[cfg(debug_assertions)]
-    fn two_args_of<F>(&self, condition: F) -> Option<(&Arg, &Arg)>
+    fn two_args_of<'a, F>(&'a self, condition: F) -> Option<(&'a Arg<'b>, &'a Arg<'b>)>
     where
         F: Fn(&Arg<'_>) -> bool,
     {
-        two_elements_of(self.args.args.iter().filter(|a| condition(a)))
+        two_elements_of(self.args.args.iter().filter(|a: &&Arg| condition(a)))
     }
 
     // just in case

@@ -140,9 +140,14 @@ impl<'b, 'c, 'z> Validator<'b, 'c, 'z> {
                     self.p.app.color(),
                 )?);
             }
+
+            // FIXME: `(&mut *vtor)(args...)` can be simplified to `vtor(args...)`
+            //      once https://github.com/rust-lang/rust/pull/72280 is landed on stable
+            //      (about 10 weeks from now)
             if let Some(ref vtor) = arg.validator {
                 debug!("Validator::validate_arg_values: checking validator...");
-                if let Err(e) = vtor(&*val.to_string_lossy()) {
+                let mut vtor = vtor.lock().unwrap();
+                if let Err(e) = (&mut *vtor)(&*val.to_string_lossy()) {
                     debug!("error");
                     return Err(Error::value_validation(Some(arg), &e, self.p.app.color())?);
                 } else {
@@ -151,7 +156,8 @@ impl<'b, 'c, 'z> Validator<'b, 'c, 'z> {
             }
             if let Some(ref vtor) = arg.validator_os {
                 debug!("Validator::validate_arg_values: checking validator_os...");
-                if let Err(e) = vtor(val) {
+                let mut vtor = vtor.lock().unwrap();
+                if let Err(e) = (&mut *vtor)(val) {
                     debug!("error");
                     return Err(Error::value_validation(
                         Some(arg),

@@ -36,12 +36,12 @@ fn str_width(s: &str) -> usize {
 
 const TAB: &str = "    ";
 
-pub(crate) enum HelpWriter<'w> {
-    Normal(&'w mut dyn Write),
-    Buffer(&'w mut Colorizer),
+pub(crate) enum HelpWriter<'writer> {
+    Normal(&'writer mut dyn Write),
+    Buffer(&'writer mut Colorizer),
 }
 
-impl<'w> Write for HelpWriter<'w> {
+impl<'writer> Write for HelpWriter<'writer> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         match self {
             HelpWriter::Normal(n) => n.write(buf),
@@ -60,9 +60,9 @@ impl<'w> Write for HelpWriter<'w> {
 /// `clap` Help Writer.
 ///
 /// Wraps a writer stream providing different methods to generate help for `clap` objects.
-pub(crate) struct Help<'b, 'c, 'd, 'w> {
-    writer: HelpWriter<'w>,
-    parser: &'d Parser<'b, 'c>,
+pub(crate) struct Help<'help, 'app, 'parser, 'writer> {
+    writer: HelpWriter<'writer>,
+    parser: &'parser Parser<'help, 'app>,
     next_line_help: bool,
     hide_pv: bool,
     term_w: usize,
@@ -72,9 +72,13 @@ pub(crate) struct Help<'b, 'c, 'd, 'w> {
 }
 
 // Public Functions
-impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
+impl<'help, 'app, 'parser, 'writer> Help<'help, 'app, 'parser, 'writer> {
     /// Create a new `Help` instance.
-    pub(crate) fn new(w: HelpWriter<'w>, parser: &'d Parser<'b, 'c>, use_long: bool) -> Self {
+    pub(crate) fn new(
+        w: HelpWriter<'writer>,
+        parser: &'parser Parser<'help, 'app>,
+        use_long: bool,
+    ) -> Self {
         debug!("Help::new");
         let term_w = match parser.app.term_w {
             Some(0) => usize::MAX,
@@ -139,7 +143,7 @@ macro_rules! write_nspaces {
 }
 
 // Methods to write Arg help.
-impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
+impl<'help, 'app, 'parser, 'writer> Help<'help, 'app, 'parser, 'writer> {
     fn good(&mut self, msg: &str) -> io::Result<()> {
         write_method!(self, msg, good)
     }
@@ -153,7 +157,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
     }
 
     /// Writes help for each argument in the order they were declared to the wrapped stream.
-    fn write_args_unsorted(&mut self, args: &[&Arg<'b>]) -> io::Result<()> {
+    fn write_args_unsorted(&mut self, args: &[&Arg<'help>]) -> io::Result<()> {
         debug!("Help::write_args_unsorted");
         // The shortest an arg can legally be is 2 (i.e. '-x')
         self.longest = 2;
@@ -179,7 +183,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
     }
 
     /// Sorts arguments by length and display order and write their help to the wrapped stream.
-    fn write_args(&mut self, args: &[&Arg<'b>]) -> io::Result<()> {
+    fn write_args(&mut self, args: &[&Arg<'help>]) -> io::Result<()> {
         debug!("Help::write_args");
         // The shortest an arg can legally be is 2 (i.e. '-x')
         self.longest = 2;
@@ -217,7 +221,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
     }
 
     /// Writes help for an argument to the wrapped stream.
-    fn write_arg(&mut self, arg: &Arg<'c>, prevent_nlh: bool) -> io::Result<()> {
+    fn write_arg(&mut self, arg: &Arg<'help>, prevent_nlh: bool) -> io::Result<()> {
         debug!("Help::write_arg");
         self.short(arg)?;
         self.long(arg)?;
@@ -227,7 +231,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
     }
 
     /// Writes argument's short command to the wrapped stream.
-    fn short(&mut self, arg: &Arg<'c>) -> io::Result<()> {
+    fn short(&mut self, arg: &Arg<'help>) -> io::Result<()> {
         debug!("Help::short");
 
         self.none(TAB)?;
@@ -242,7 +246,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
     }
 
     /// Writes argument's long command to the wrapped stream.
-    fn long(&mut self, arg: &Arg<'c>) -> io::Result<()> {
+    fn long(&mut self, arg: &Arg<'help>) -> io::Result<()> {
         debug!("Help::long");
         if !arg.has_switch() {
             return Ok(());
@@ -271,7 +275,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
     }
 
     /// Writes argument's possible values to the wrapped stream.
-    fn val(&mut self, arg: &Arg<'c>) -> Result<String, io::Error> {
+    fn val(&mut self, arg: &Arg<'help>) -> Result<String, io::Error> {
         debug!("Help::val: arg={}", arg.name);
         let mult =
             arg.is_set(ArgSettings::MultipleValues) || arg.is_set(ArgSettings::MultipleOccurrences);
@@ -399,7 +403,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
     }
 
     /// Writes argument's help to the wrapped stream.
-    fn help(&mut self, arg: &Arg<'c>, spec_vals: &str, prevent_nlh: bool) -> io::Result<()> {
+    fn help(&mut self, arg: &Arg<'help>, spec_vals: &str, prevent_nlh: bool) -> io::Result<()> {
         debug!("Help::help");
         let h = if self.use_long {
             arg.long_about.unwrap_or_else(|| arg.about.unwrap_or(""))
@@ -545,8 +549,8 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
 }
 
 /// Methods to write a single subcommand
-impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
-    fn write_subcommand(&mut self, app: &App<'b>) -> io::Result<()> {
+impl<'help, 'app, 'parser, 'writer> Help<'help, 'app, 'parser, 'writer> {
+    fn write_subcommand(&mut self, app: &App<'help>) -> io::Result<()> {
         debug!("Help::write_subcommand");
         self.none(TAB)?;
         self.good(&app.name)?;
@@ -555,7 +559,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
         Ok(())
     }
 
-    fn sc_val(&mut self, app: &App<'b>) -> Result<String, io::Error> {
+    fn sc_val(&mut self, app: &App<'help>) -> Result<String, io::Error> {
         debug!("Help::sc_val: app={}", app.name);
         let spec_vals = self.sc_spec_vals(app);
         let h = app.about.unwrap_or("");
@@ -594,7 +598,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
         spec_vals.join(" ")
     }
 
-    fn sc_help(&mut self, app: &App<'b>, spec_vals: &str) -> io::Result<()> {
+    fn sc_help(&mut self, app: &App<'help>, spec_vals: &str) -> io::Result<()> {
         debug!("Help::sc_help");
         let h = if self.use_long {
             app.long_about.unwrap_or_else(|| app.about.unwrap_or(""))
@@ -650,7 +654,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
 }
 
 // Methods to write Parser help.
-impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
+impl<'help, 'app, 'parser, 'writer> Help<'help, 'app, 'parser, 'writer> {
     /// Writes help for all arguments (options, flags, args, subcommands)
     /// including titles of a Parser Object to the wrapped stream.
     pub(crate) fn write_all_args(&mut self) -> ClapResult<()> {
@@ -758,7 +762,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
     }
 
     /// Writes help for subcommands of a Parser Object to the wrapped stream.
-    fn write_subcommands(&mut self, app: &App<'b>) -> io::Result<()> {
+    fn write_subcommands(&mut self, app: &App<'help>) -> io::Result<()> {
         debug!("Help::write_subcommands");
         // The shortest an arg can legally be is 2 (i.e. '-x')
         self.longest = 2;
@@ -975,7 +979,7 @@ fn copy_and_capture<R: Read, W: Write>(
 }
 
 // Methods to write Parser help using templates.
-impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
+impl<'help, 'app, 'parser, 'writer> Help<'help, 'app, 'parser, 'writer> {
     /// Write help to stream for the parser in the format defined by the template.
     ///
     /// Tags arg given inside curly brackets:

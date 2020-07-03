@@ -83,11 +83,8 @@ impl Input {
     }
 }
 
-pub(crate) struct Parser<'b, 'c>
-where
-    'b: 'c,
-{
-    pub(crate) app: &'c mut App<'b>,
+pub(crate) struct Parser<'help, 'app> {
+    pub(crate) app: &'app mut App<'help>,
     pub(crate) required: ChildGraph<Id>,
     pub(crate) overriden: Vec<Id>,
     pub(crate) seen: Vec<Id>,
@@ -95,11 +92,11 @@ where
 }
 
 // Initializing Methods
-impl<'b, 'c> Parser<'b, 'c>
+impl<'help, 'app> Parser<'help, 'app>
 where
-    'b: 'c,
+    'help: 'app,
 {
-    pub(crate) fn new(app: &'c mut App<'b>) -> Self {
+    pub(crate) fn new(app: &'app mut App<'help>) -> Self {
         let mut reqs = ChildGraph::with_capacity(5);
         for a in app
             .args
@@ -359,9 +356,9 @@ where
 }
 
 // Parsing Methods
-impl<'b, 'c> Parser<'b, 'c>
+impl<'help, 'app> Parser<'help, 'app>
 where
-    'b: 'c,
+    'help: 'app,
 {
     // The actual parsing function
     #[allow(clippy::cognitive_complexity)]
@@ -1240,7 +1237,7 @@ where
     fn parse_opt(
         &self,
         val: &Option<ArgStr<'_>>,
-        opt: &Arg<'b>,
+        opt: &Arg<'help>,
         had_eq: bool,
         matcher: &mut ArgMatcher,
     ) -> ClapResult<ParseResult> {
@@ -1316,7 +1313,7 @@ where
 
     fn add_val_to_arg(
         &self,
-        arg: &Arg<'b>,
+        arg: &Arg<'help>,
         val: &ArgStr<'_>,
         matcher: &mut ArgMatcher,
         ty: ValueType,
@@ -1352,7 +1349,7 @@ where
 
     fn add_single_val_to_arg(
         &self,
-        arg: &Arg<'b>,
+        arg: &Arg<'help>,
         v: &ArgStr<'_>,
         matcher: &mut ArgMatcher,
         ty: ValueType,
@@ -1383,7 +1380,7 @@ where
         Ok(ParseResult::ValuesDone(arg.id.clone()))
     }
 
-    fn parse_flag(&self, flag: &Arg<'b>, matcher: &mut ArgMatcher) -> ClapResult<ParseResult> {
+    fn parse_flag(&self, flag: &Arg<'help>, matcher: &mut ArgMatcher) -> ClapResult<ParseResult> {
         debug!("Parser::parse_flag");
 
         matcher.inc_occurrence_of(&flag.id);
@@ -1482,7 +1479,12 @@ where
         Ok(())
     }
 
-    fn add_value(&self, arg: &Arg<'b>, matcher: &mut ArgMatcher, ty: ValueType) -> ClapResult<()> {
+    fn add_value(
+        &self,
+        arg: &Arg<'help>,
+        matcher: &mut ArgMatcher,
+        ty: ValueType,
+    ) -> ClapResult<()> {
         if !arg.default_vals_ifs.is_empty() {
             debug!("Parser::add_value: has conditional defaults");
 
@@ -1569,9 +1571,9 @@ where
 }
 
 // Error, Help, and Version Methods
-impl<'b, 'c> Parser<'b, 'c>
+impl<'help, 'app> Parser<'help, 'app>
 where
-    'b: 'c,
+    'help: 'app,
 {
     fn did_you_mean_error(&mut self, arg: &str, matcher: &mut ArgMatcher) -> ClapResult<()> {
         debug!("Parser::did_you_mean_error: arg={}", arg);
@@ -1679,9 +1681,9 @@ where
 }
 
 // Query Methods
-impl<'b, 'c> Parser<'b, 'c>
+impl<'help, 'app> Parser<'help, 'app>
 where
-    'b: 'c,
+    'help: 'app,
 {
     fn contains_short(&self, s: char) -> bool {
         self.app.contains_short(s)
