@@ -636,7 +636,7 @@ impl Error {
         start_error(&mut c, "The value '");
         c.warning(val);
         c.none("' was provided to '");
-        c.warning(arg.name.clone());
+        c.warning(arg.name);
         c.none("' but it wasn't expecting any more values");
         put_usage(&mut c, usage);
         try_help(&mut c);
@@ -658,7 +658,7 @@ impl Error {
         let verb = Error::singular_or_plural(curr_vals);
 
         start_error(&mut c, "The argument '");
-        c.warning(arg.name.clone());
+        c.warning(arg.name);
         c.none("' requires at least ");
         c.warning(&min_vals.to_string());
         c.none(" values, but only ");
@@ -680,7 +680,7 @@ impl Error {
 
         if let Some(a) = arg {
             c.none(" for '");
-            c.warning(a.name.clone());
+            c.warning(a.name);
             c.none("'");
         }
 
@@ -728,7 +728,7 @@ impl Error {
         let mut c = Colorizer::new(true, color);
 
         start_error(&mut c, "The argument '");
-        c.warning(arg.name.clone());
+        c.warning(arg.name);
         c.none("' was provided more than once, but cannot be used multiple times");
         put_usage(&mut c, usage);
         try_help(&mut c);

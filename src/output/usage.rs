@@ -266,7 +266,7 @@ impl<'b, 'c, 'z> Usage<'b, 'c, 'z> {
             && incl_reqs
         {
             debug!("Usage::get_args_tag:iter: Don't collapse returning all");
-            return Some(
+            Some(
                 self.p
                     .app
                     .get_positionals()
@@ -292,7 +292,7 @@ impl<'b, 'c, 'z> Usage<'b, 'c, 'z> {
                 })
                 .max()
                 .unwrap_or_else(|| Some(self.p.app.get_positionals().count() as u64));
-            return Some(
+            Some(
                 self.p
                     .app
                     .get_positionals()
