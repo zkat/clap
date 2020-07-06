@@ -39,15 +39,6 @@ pub(crate) enum HelpWriter<'w> {
     Buffer(&'w mut Colorizer),
 }
 
-impl HelpWriter<'_> {
-    fn finish(&mut self) -> io::Result<()> {
-        match self {
-            HelpWriter::Normal(ref mut writer) => writer.flush(),
-            HelpWriter::Buffer(ref mut colorizer) => colorizer.print(),
-        }
-    }
-}
-
 /// `clap` Help Writer.
 ///
 /// Wraps a writer stream providing different methods to generate help for `clap` objects.
@@ -94,11 +85,11 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
     }
 
     /// Writes the parser help to the wrapped stream.
-    pub(crate) fn write_help(&mut self) -> ClapResult<()> {
+    pub(crate) fn write_help(&mut self) -> io::Result<()> {
         debug!("Help::write_help");
 
         if let Some(h) = self.parser.app.help_str {
-            self.none(h).map_err(Error::from)?;
+            self.none(h)?;
         } else if let Some(tmpl) = self.parser.app.template {
             self.write_templated_help(tmpl)?;
         } else {
@@ -647,7 +638,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
 impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
     /// Writes help for all arguments (options, flags, args, subcommands)
     /// including titles of a Parser Object to the wrapped stream.
-    pub(crate) fn write_all_args(&mut self) -> ClapResult<()> {
+    pub(crate) fn write_all_args(&mut self) -> io::Result<()> {
         debug!("Help::write_all_args");
         let flags = self.parser.has_flags();
         let pos = self
@@ -812,7 +803,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
     }
 
     /// Writes default help for a Parser Object to the wrapped stream.
-    pub(crate) fn write_default_help(&mut self) -> ClapResult<()> {
+    pub(crate) fn write_default_help(&mut self) -> io::Result<()> {
         debug!("Help::write_default_help");
         if let Some(h) = self.parser.app.before_help {
             self.write_before_after_help(h)?;
@@ -868,7 +859,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
             self.write_before_after_help(h)?;
         }
 
-        self.writer.finish().map_err(Error::from)
+        Ok(())
     }
 }
 
@@ -894,7 +885,7 @@ impl<'b, 'c, 'd, 'w> Help<'b, 'c, 'd, 'w> {
     ///
     /// The template system is, on purpose, very simple. Therefore the tags have to be written
     /// in the lowercase and without spacing.
-    fn write_templated_help(&mut self, template: &str) -> ClapResult<()> {
+    fn write_templated_help(&mut self, template: &str) -> io::Result<()> {
         debug!("Help::write_templated_help");
 
         // The strategy is to copy the template from the reader to wrapped stream

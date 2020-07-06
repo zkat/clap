@@ -1091,7 +1091,7 @@ impl<'b> App<'b> {
         self
     }
 
-    /// Prints the full help message to [`io::stdout()`] using a [`BufWriter`] using the same
+    /// Prints the full help message to [`io::stdout()`] using the same
     /// method as if someone ran `-h` to request the help message
     ///
     /// **NOTE:** clap has the ability to distinguish between "short" and "long" help messages
@@ -1105,18 +1105,15 @@ impl<'b> App<'b> {
     /// app.print_help();
     /// ```
     /// [`io::stdout()`]: https://doc.rust-lang.org/std/io/fn.stdout.html
-    /// [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
     /// [`-h` (short)]: ./struct.Arg.html#method.help
     /// [`--help` (long)]: ./struct.Arg.html#method.long_help
-    pub fn print_help(&mut self) -> ClapResult<()> {
+    pub fn print_help(&mut self) -> io::Result<()> {
         self._build();
 
         let p = Parser::new(self);
         let mut c = Colorizer::new(false, p.color_help());
-
         Help::new(HelpWriter::Buffer(&mut c), &p, false).write_help()?;
-
-        Ok(c.print()?)
+        c.print()
     }
 
     /// Prints the full help message to [`io::stdout()`] using a [`BufWriter`] using the same
@@ -1136,15 +1133,13 @@ impl<'b> App<'b> {
     /// [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
     /// [`-h` (short)]: ./struct.Arg.html#method.help
     /// [`--help` (long)]: ./struct.Arg.html#method.long_help
-    pub fn print_long_help(&mut self) -> ClapResult<()> {
+    pub fn print_long_help(&mut self) -> io::Result<()> {
         self._build();
 
         let p = Parser::new(self);
         let mut c = Colorizer::new(false, p.color_help());
-
         Help::new(HelpWriter::Buffer(&mut c), &p, true).write_help()?;
-
-        Ok(c.print()?)
+        c.print()
     }
 
     /// Writes the full help message to the user to a [`io::Write`] object in the same method as if
@@ -1165,11 +1160,12 @@ impl<'b> App<'b> {
     /// [`io::Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
     /// [`-h` (short)]: ./struct.Arg.html#method.help
     /// [`--help` (long)]: ./struct.Arg.html#method.long_help
-    pub fn write_help<W: Write>(&mut self, w: &mut W) -> ClapResult<()> {
+    pub fn write_help<W: Write>(&mut self, w: &mut W) -> io::Result<()> {
         self._build();
 
         let p = Parser::new(self);
-        Help::new(HelpWriter::Normal(w), &p, false).write_help()
+        Help::new(HelpWriter::Normal(w), &p, false).write_help()?;
+        w.flush()
     }
 
     /// Writes the full help message to the user to a [`io::Write`] object in the same method as if
@@ -1190,11 +1186,12 @@ impl<'b> App<'b> {
     /// [`io::Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
     /// [`-h` (short)]: ./struct.Arg.html#method.help
     /// [`--help` (long)]: ./struct.Arg.html#method.long_help
-    pub fn write_long_help<W: Write>(&mut self, w: &mut W) -> ClapResult<()> {
+    pub fn write_long_help<W: Write>(&mut self, w: &mut W) -> io::Result<()> {
         self._build();
 
         let p = Parser::new(self);
-        Help::new(HelpWriter::Normal(w), &p, true).write_help()
+        Help::new(HelpWriter::Normal(w), &p, true).write_help()?;
+        w.flush()
     }
 
     /// Returns the version message rendered as if the user ran `-V`.
